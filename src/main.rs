@@ -1,13 +1,10 @@
-use std::process;
 use std::error::Error;
-
-use rs_manifest_patcher::manifest::FileOperation;
-use rs_manifest_patcher::manifest::Transaction;
-use rs_manifest_patcher::prompt;
+use std::process;
 use tokio;
 
-use rs_manifest_patcher::Config;
-use rs_manifest_patcher::Manifest;
+use rs_manifest_patcher::prompt;
+use rs_manifest_patcher::{Config, Manifest, Transaction};
+
 
 #[tokio::main]
 async fn main() {
@@ -34,6 +31,9 @@ async fn run(config: Config) -> Result<(), Box<dyn Error>> {
     if transaction.has_pending_operations() {
         transaction.download().await?;
     }
+
+    println!("\n{}", "-".repeat(96));
+    println!("All files are up to date or successfully downloaded.");
 
     Ok(())
 }

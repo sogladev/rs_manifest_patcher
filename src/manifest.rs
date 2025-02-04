@@ -1,17 +1,16 @@
-use std::io::Write;
-use std::{fs, os::unix::fs::MetadataExt};
-use std::path::PathBuf;
 use std::error::Error;
-use futures::StreamExt; // Import the StreamExt trait
+use std::fs;
+use std::path::PathBuf;
 
+use colored::Colorize;
+use futures::StreamExt;
+use humansize::{self, BINARY};
+use serde::{Serialize, Deserialize};
 use tokio::io::AsyncWriteExt;
 use url::Url;
-use serde::{Serialize, Deserialize};
-use colored::Colorize;
-use humansize;
-use humansize::BINARY;
 
-use crate::Progress;
+use super::Progress;
+
 
 #[derive(Debug, Clone)]
 pub enum Location {
@@ -66,7 +65,6 @@ pub struct Manifest {
 impl Manifest {
     fn from_file(file_path: &PathBuf) -> Result<String, std::io::Error> {
         fs::read_to_string(file_path)
-        // fs::read_to_string(file_path).unwrap().expect("Failed to read file")
     }
 
     async fn from_url(url: &Url) -> Result<String, Box<dyn Error>> {
@@ -106,13 +104,14 @@ impl<'a> FileOperation<'a> {
     /// Process the manifest and return a list of file operations
     fn process(manifest: &Manifest) -> Vec<FileOperation> {
         manifest.files.iter().map(|file| {
-            match fs::read(&file.path) {
+            match std::fs::read(&file.path) {
                 Ok(contents) => {
                     let digest = md5::compute(contents);
                     let digest_str = format!("{:x}", digest);
                     let new_size = std::fs::metadata(&file.path).unwrap_or_else(
                         |_| panic!("Failed to read metadata for file: {:?}", &file.path)
-                    ).size();
+                    ).len();
+
                     FileOperation {
                         hash: file.hash.clone(),
                         status: if digest_str == file.hash {
@@ -248,7 +247,6 @@ impl<'a> Transaction<'a> {
 
     pub async fn download(&self) -> Result<(), Box<dyn Error>> {
         let http_client = reqwest::Client::new();
-
         for (idx, op) in self.pending().iter().enumerate() {
             let dest_path = std::path::Path::new(&op.patch_file.path);
             // Create parent directories if they don't exist

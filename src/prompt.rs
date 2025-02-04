@@ -1,5 +1,4 @@
-use std::io;
-use std::io::Write;
+use std::io::{self, Write};
 
 pub fn confirm(message: &str) -> io::Result<bool> {
     print!("{} [y/N]: ", message);

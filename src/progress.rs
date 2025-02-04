@@ -1,5 +1,6 @@
-use std::{io::Write, time::Duration};
-use humansize::{format_size, BINARY, DECIMAL};
+use std::io::Write;
+use std::time::Duration;
+use humansize::{format_size, DECIMAL};
 
 const MAX_FILENAME_LENGTH: usize = 25;
 const PROGRESS_BAR_WIDTH: usize = 20;
@@ -41,11 +42,10 @@ impl Progress {
         let filename = Self::truncate_filename(&self.filename);
         let speed = format_size(self.speed as u64, DECIMAL);
         let size = format_size(self.file_size, DECIMAL);
-
         let total_files_width = self.total_files.to_string().len();
 
         if self.current >= self.total {
-            print!("\r{:width$}", "", width = 80); // Clear the line
+            print!("\r{:width$}", "", width = TOTAL_LINE_WIDTH); // Clear the line
             println!(
                 "\r[{:<width$}/{}] {:<filename_width$} {} 100% (complete) {}         ",
                 self.file_index,
@@ -70,7 +70,7 @@ impl Progress {
                 width = total_files_width,
                 filename_width = MAX_FILENAME_LENGTH - 1
             );
-        std::io::stdout().flush().unwrap(); // Ensure the output is flushed immediately
+            std::io::stdout().flush().unwrap(); // Ensure the output is flushed immediately
         }
 
     }
