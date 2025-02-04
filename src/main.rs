@@ -2,9 +2,8 @@ use std::error::Error;
 use std::process;
 
 use tokio;
-use figlet_rs::FIGfont;
 
-use rs_manifest_patcher::prompt;
+use rs_manifest_patcher::{banner, prompt};
 use rs_manifest_patcher::{Config, Manifest, Transaction};
 
 
@@ -22,11 +21,7 @@ async fn main() {
 }
 
 async fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let slant_font_data = include_str!("../resources/slant.flf");
-    let slant_font = FIGfont::from_content(slant_font_data).unwrap();
-    let figure = slant_font.convert("Banner");
-    print!("{}", figure.unwrap());
-    println!("Bugs or issues: https://github.com/sogladev/rs_manifest_patcher/");
+    banner::print_banner();
 
     let manifest = Manifest::build(&config.manifest_location).await?;
     let transaction = Transaction::new(&manifest);

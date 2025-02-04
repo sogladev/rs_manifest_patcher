@@ -1,5 +1,6 @@
 use std::io::{self, Write};
 
+/// Prompt the user for confirmation [y/N]
 pub fn confirm(message: &str) -> io::Result<bool> {
     print!("{} [y/N]: ", message);
     io::stdout().flush()?;
