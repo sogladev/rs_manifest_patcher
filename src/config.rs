@@ -17,6 +17,8 @@ impl Config {
         let manifest_str = matches.get_one::<String>("manifest").unwrap().to_string();
         let manifest = manifest::Location::parse(manifest_str)?;
 
-        Ok(Config { manifest_location: manifest })
+        Ok(Config {
+            manifest_location: manifest,
+        })
     }
 }

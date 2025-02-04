@@ -1,9 +1,9 @@
 use std::error::Error;
 
 use colored::Colorize;
-use tokio::io::AsyncWriteExt;
 use futures::StreamExt;
 use humansize::{self, BINARY};
+use tokio::io::AsyncWriteExt;
 
 use super::manifest::{Manifest, PatchFile};
 use super::Progress;
@@ -12,7 +12,7 @@ use super::Progress;
 enum Status {
     Present,
     OutOfDate,
-    Missing
+    Missing,
 }
 
 struct FileOperation<'a> {
@@ -26,14 +26,18 @@ struct FileOperation<'a> {
 impl FileOperation<'_> {
     /// Process the manifest and return a list of file operations
     fn process(manifest: &Manifest) -> Vec<FileOperation> {
-        manifest.files.iter().map(|file| {
-            match std::fs::read(&file.path) {
+        manifest
+            .files
+            .iter()
+            .map(|file| match std::fs::read(&file.path) {
                 Ok(contents) => {
                     let digest = md5::compute(contents);
                     let digest_str = format!("{:x}", digest);
-                    let new_size = std::fs::metadata(&file.path).unwrap_or_else(
-                        |_| panic!("Failed to read metadata for file: {:?}", &file.path)
-                    ).len();
+                    let new_size = std::fs::metadata(&file.path)
+                        .unwrap_or_else(|_| {
+                            panic!("Failed to read metadata for file: {:?}", &file.path)
+                        })
+                        .len();
 
                     FileOperation {
                         #[cfg(debug_assertions)]
@@ -53,9 +57,9 @@ impl FileOperation<'_> {
                     status: Status::Missing,
                     patch_file: file,
                     size: 0,
-                }
-            }
-        }).collect()
+                },
+            })
+            .collect()
     }
 }
 
@@ -79,7 +83,8 @@ impl<'a> Transaction<'a> {
 
         println!("\n {}", "Up-to-date files:".green());
         for op in self.up_to_date() {
-            println!("  {} (Size: {})",
+            println!(
+                "  {} (Size: {})",
                 op.patch_file.path.green(),
                 humansize::format_size(op.size, BINARY)
             );
@@ -92,7 +97,8 @@ impl<'a> Transaction<'a> {
 
         println!("\n {}", "Outdated files (will be updated):".yellow());
         for op in self.outdated() {
-            println!("  {} (Current Size: {}, New Size: {})",
+            println!(
+                "  {} (Current Size: {}, New Size: {})",
                 op.patch_file.path.yellow(),
                 humansize::format_size(op.size, BINARY),
                 humansize::format_size(op.patch_file.size as u64, BINARY)
@@ -106,7 +112,8 @@ impl<'a> Transaction<'a> {
 
         println!("\n {}", "Missing files (will be downloaded):".red());
         for op in self.missing() {
-            println!("  {} (New Size: {})",
+            println!(
+                "  {} (New Size: {})",
                 op.patch_file.path.red(),
                 humansize::format_size(op.patch_file.size as u64, BINARY)
             );
@@ -117,48 +124,58 @@ impl<'a> Transaction<'a> {
         if self.has_pending_operations() {
             println!("\nTransaction Summary:");
             println!(" Installing/Updating: {} files", self.pending_count());
-            println!("\nTotal size of inbound files is {}. Need to download {}.",
+            println!(
+                "\nTotal size of inbound files is {}. Need to download {}.",
                 humansize::format_size(self.total_download_size() as u64, BINARY),
                 humansize::format_size(self.total_download_size() as u64, BINARY)
             );
 
             let disk_space_change = self.disk_space_change();
             if disk_space_change > 0 {
-                println!("After this operation, {} of additional disk space will be used.",
-                    humansize::format_size(disk_space_change as u64, BINARY));
+                println!(
+                    "After this operation, {} of additional disk space will be used.",
+                    humansize::format_size(disk_space_change as u64, BINARY)
+                );
             } else {
-                println!("After this operation, {} of disk space will be freed.",
-                    humansize::format_size(disk_space_change.unsigned_abs(), BINARY));
+                println!(
+                    "After this operation, {} of disk space will be freed.",
+                    humansize::format_size(disk_space_change.unsigned_abs(), BINARY)
+                );
             }
         }
     }
 
     fn up_to_date(&self) -> Vec<&FileOperation> {
-        self.operations.iter()
+        self.operations
+            .iter()
             .filter(|op| op.status == Status::Present)
             .collect()
     }
 
     fn outdated(&self) -> Vec<&FileOperation> {
-        self.operations.iter()
+        self.operations
+            .iter()
             .filter(|op| op.status == Status::OutOfDate)
             .collect()
     }
 
     fn pending(&self) -> Vec<&FileOperation> {
-        self.operations.iter()
+        self.operations
+            .iter()
             .filter(|op| op.status != Status::Present)
             .collect()
     }
 
     fn missing(&self) -> Vec<&FileOperation> {
-        self.operations.iter()
+        self.operations
+            .iter()
             .filter(|op| op.status == Status::Missing)
             .collect()
     }
 
     fn pending_count(&self) -> usize {
-        self.operations.iter()
+        self.operations
+            .iter()
             .filter(|x| x.status != Status::Present)
             .count()
     }
@@ -168,14 +185,16 @@ impl<'a> Transaction<'a> {
     }
 
     fn total_download_size(&self) -> i64 {
-        self.operations.iter()
+        self.operations
+            .iter()
             .filter(|x| x.status != Status::Present)
             .map(|x| x.patch_file.size)
             .sum()
     }
 
     fn disk_space_change(&self) -> i64 {
-        self.operations.iter()
+        self.operations
+            .iter()
             .filter(|x| x.status != Status::Present)
             .map(|x| x.patch_file.size - x.size as i64)
             .sum()
@@ -192,7 +211,11 @@ impl<'a> Transaction<'a> {
 
             let response = http_client.get(&op.patch_file.url).send().await?;
             if !response.status().is_success() {
-                eprintln!("Failed to download {}: {}", &op.patch_file.url, response.status());
+                eprintln!(
+                    "Failed to download {}: {}",
+                    &op.patch_file.url,
+                    response.status()
+                );
                 continue;
             }
 
@@ -215,11 +238,13 @@ impl<'a> Transaction<'a> {
                     speed: downloaded as f64 / start.elapsed().as_secs_f64(),
                     file_size: total_size,
                     elapsed: start.elapsed(),
-                    filename: dest_path.file_name()
+                    filename: dest_path
+                        .file_name()
                         .unwrap_or_default()
                         .to_string_lossy()
                         .to_string(),
-                }.print();
+                }
+                .print();
             }
         }
         Ok(())

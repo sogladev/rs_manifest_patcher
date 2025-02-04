@@ -23,7 +23,7 @@ impl Progress {
         if name.len() <= MAX_FILENAME_LENGTH {
             format!("{:width$}", name, width = MAX_FILENAME_LENGTH)
         } else {
-            format!("{}...", &name[..MAX_FILENAME_LENGTH-3])
+            format!("{}...", &name[..MAX_FILENAME_LENGTH - 3])
         }
     }
 
@@ -57,7 +57,6 @@ impl Progress {
                 width = total_files_width,
                 filename_width = MAX_FILENAME_LENGTH - 1
             );
-
         } else {
             print!(
                 "\r[{:>width$}/{}] {:<filename_width$} {} {:5.1}% {:8}/s {}",

@@ -1,7 +1,7 @@
 mod common;
 
-use rs_manifest_patcher::manifest::{Manifest, Location};
 use common::TempFile;
+use rs_manifest_patcher::manifest::{Location, Manifest};
 
 #[cfg(test)]
 mod tests {
@@ -29,7 +29,9 @@ mod tests {
 
         // Deserialize manifest from the file
         let location = Location::FilePath(temp_file.path.clone());
-        let manifest = Manifest::build(&location).await.expect("Failed to build manifest");
+        let manifest = Manifest::build(&location)
+            .await
+            .expect("Failed to build manifest");
         assert_eq!(manifest.version, "1.0");
         assert_eq!(manifest.files.len(), 1);
         assert_eq!(manifest.files[0].path, "files/A.bin");

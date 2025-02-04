@@ -1,7 +1,7 @@
-use std::fs::{File, remove_file};
+use std::env::temp_dir;
+use std::fs::{remove_file, File};
 use std::io::Write;
 use std::path::PathBuf;
-use std::env::temp_dir;
 
 pub struct TempFile {
     pub path: PathBuf,
@@ -13,7 +13,8 @@ impl TempFile {
         path.push(filename);
 
         let mut file = File::create(&path).expect("Failed to create temp file");
-        file.write_all(content.as_bytes()).expect("Failed to write to temp file");
+        file.write_all(content.as_bytes())
+            .expect("Failed to write to temp file");
 
         TempFile { path }
     }

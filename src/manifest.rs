@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 #[derive(Debug, Clone)]
@@ -32,7 +32,7 @@ impl Location {
 
         Err(
             "Manifest location must be a valid URL (e.g., http://localhost:8080/manifest.json) \
-            or a readable file path"
+            or a readable file path",
         )
     }
 }
@@ -70,7 +70,7 @@ impl Manifest {
     pub async fn build(location: &Location) -> Result<Manifest, Box<dyn Error>> {
         let contents = match location {
             Location::Url(url) => Manifest::from_url(url).await?,
-            Location::FilePath(file_path) => Manifest::from_file(file_path)?
+            Location::FilePath(file_path) => Manifest::from_file(file_path)?,
         };
 
         let manifest: Manifest = serde_json::from_str(&contents)?;

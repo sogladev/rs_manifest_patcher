@@ -4,7 +4,6 @@ use std::process;
 use rs_manifest_patcher::{banner, prompt};
 use rs_manifest_patcher::{Config, Manifest, Transaction};
 
-
 #[tokio::main]
 async fn main() {
     let config = Config::build().unwrap_or_else(|err| {
