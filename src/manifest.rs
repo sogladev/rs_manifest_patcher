@@ -1,7 +1,8 @@
 use std::fs;
 use std::path::PathBuf;
-use url::Url;
 use std::error::Error;
+
+use url::Url;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone)]

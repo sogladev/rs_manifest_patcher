@@ -20,7 +20,7 @@ impl Config {
 
         let manifest = manifest::Location::parse(manifest_str)?;
 
-        dbg!(&manifest);
+        // dbg!(&manifest);
         Ok(Config { manifest_location: manifest })
     }
 }

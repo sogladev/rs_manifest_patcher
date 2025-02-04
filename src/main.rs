@@ -1,10 +1,10 @@
 use std::process;
 use std::error::Error;
 
+use tokio;
+
 use rs_manifest_patcher::Config;
 use rs_manifest_patcher::manifest::Manifest;
-
-use tokio;
 
 #[tokio::main]
 async fn main() {
@@ -21,6 +21,6 @@ async fn main() {
 
 async fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let manifest = Manifest::build(&config.manifest_location).await?;
-    println!("Manifest: {:?}", manifest);
+    dbg!(&manifest);
     Ok(())
 }
