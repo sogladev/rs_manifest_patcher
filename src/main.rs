@@ -5,7 +5,10 @@ use std::error::Error;
 use rs_manifest_patcher::Config;
 
 fn main() {
-    let config = Config::build().unwrap();
+    let config = Config::build().unwrap_or_else(|err| {
+        println!("Problem parsing arguments: {err}");
+        process::exit(1);
+    });
 
     if let Err(e) = run(config) {
         println!("Application error: {e}");
