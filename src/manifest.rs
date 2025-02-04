@@ -1,12 +1,17 @@
+use std::io::Write;
 use std::{fs, os::unix::fs::MetadataExt};
 use std::path::PathBuf;
 use std::error::Error;
+use futures::StreamExt; // Import the StreamExt trait
 
+use tokio::io::AsyncWriteExt;
 use url::Url;
 use serde::{Serialize, Deserialize};
 use colored::Colorize;
 use humansize;
 use humansize::BINARY;
+
+use crate::Progress;
 
 #[derive(Debug, Clone)]
 pub enum Location {
@@ -205,6 +210,12 @@ impl<'a> Transaction<'a> {
             .collect()
     }
 
+    pub fn pending(&self) -> Vec<&FileOperation> {
+        self.operations.iter()
+            .filter(|op| op.status != Status::Present)
+            .collect()
+    }
+
     pub fn missing(&self) -> Vec<&FileOperation> {
         self.operations.iter()
             .filter(|op| op.status == Status::Missing)
@@ -237,8 +248,10 @@ impl<'a> Transaction<'a> {
 
     pub async fn download(&self) -> Result<(), Box<dyn Error>> {
         let http_client = reqwest::Client::new();
-        for op in self.operations.iter() {
+
+        for (idx, op) in self.pending().iter().enumerate() {
             let dest_path = std::path::Path::new(&op.patch_file.path);
+            // Create parent directories if they don't exist
             if let Some(dir) = dest_path.parent() {
                 tokio::fs::create_dir_all(dir).await?;
             }
@@ -249,9 +262,31 @@ impl<'a> Transaction<'a> {
                 continue;
             }
 
-            let content = response.bytes().await?;
-            tokio::fs::write(dest_path, &content).await?;
-            println!("Downloaded {} to {:?}", &op.patch_file.url, dest_path);
+            let total_size = response.content_length().unwrap_or(0);
+            let mut file = tokio::fs::File::create(dest_path).await?;
+            let start = std::time::Instant::now();
+            let mut downloaded: u64 = 0;
+
+            let mut stream = response.bytes_stream();
+            while let Some(chunk) = stream.next().await {
+                let chunk = chunk?;
+                file.write_all(&chunk).await?;
+                downloaded += chunk.len() as u64;
+
+                Progress {
+                    current: downloaded,
+                    total: total_size,
+                    file_index: idx + 1,
+                    total_files: self.pending_count(),
+                    speed: downloaded as f64 / start.elapsed().as_secs_f64(),
+                    file_size: total_size,
+                    elapsed: start.elapsed(),
+                    filename: dest_path.file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string(),
+                }.print();
+            }
         }
         Ok(())
     }
