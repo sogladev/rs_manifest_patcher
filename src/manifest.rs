@@ -99,7 +99,7 @@ pub struct FileOperation<'a> {
 
 impl<'a> FileOperation<'a> {
     /// Process the manifest and return a list of file operations
-    pub fn process(manifest: &Manifest) -> Vec<FileOperation> {
+    fn process(manifest: &Manifest) -> Vec<FileOperation> {
         manifest.files.iter().map(|file| {
             match fs::read(&file.path) {
                 Ok(contents) => {
@@ -128,9 +128,116 @@ impl<'a> FileOperation<'a> {
             }
         }).collect()
     }
-    pub async fn download<'b>(file_operations: &Vec<FileOperation<'b>>) -> Result<(), Box<dyn Error>> {
+}
+
+#[derive(Debug)]
+pub struct Transaction<'a> {
+    pub operations: Vec<FileOperation<'a>>,
+    manifest: &'a Manifest,
+}
+
+impl<'a> Transaction<'a> {
+    pub fn new(manifest: &'a Manifest) -> Self {
+        let operations = FileOperation::process(manifest);
+        Transaction {
+            operations,
+            manifest,
+        }
+    }
+
+    pub fn print(&self) {
+        println!("\nManifest Overview:");
+        println!(" Version: {}", self.manifest.version);
+
+        println!("\n {}", "Up-to-date files:".green());
+        for op in self.up_to_date() {
+            println!("  {} (Size: {})",
+                op.patch_file.path.green(),
+                humansize::format_size(op.size, BINARY)
+            );
+        }
+
+        println!("\n {}", "Outdated files (will be updated):".yellow());
+        for op in self.outdated() {
+            println!("  {} (Current Size: {}, New Size: {})",
+                op.patch_file.path.yellow(),
+                humansize::format_size(op.size, BINARY),
+                humansize::format_size(op.patch_file.size as u64, BINARY)
+            );
+        }
+
+        println!("\n {}", "Missing files (will be downloaded):".red());
+        for op in self.missing() {
+            println!("  {} (New Size: {})",
+                op.patch_file.path.red(),
+                humansize::format_size(op.patch_file.size as u64, BINARY)
+            );
+        }
+
+        if self.has_pending_operations() {
+            println!("\nTransaction Summary:");
+            println!(" Installing/Updating: {} files", self.pending_count());
+            println!("\nTotal size of inbound files is {}. Need to download {}.",
+                humansize::format_size(self.total_download_size() as u64, BINARY),
+                humansize::format_size(self.total_download_size() as u64, BINARY)
+            );
+
+            let disk_space_change = self.disk_space_change();
+            if disk_space_change > 0 {
+                println!("After this operation, {} of additional disk space will be used.",
+                    humansize::format_size(disk_space_change as u64, BINARY));
+            } else {
+                println!("After this operation, {} of disk space will be freed.",
+                    humansize::format_size(disk_space_change.abs() as u64, BINARY));
+            }
+        }
+    }
+
+    pub fn up_to_date(&self) -> Vec<&FileOperation> {
+        self.operations.iter()
+            .filter(|op| op.status == Status::Present)
+            .collect()
+    }
+
+    pub fn outdated(&self) -> Vec<&FileOperation> {
+        self.operations.iter()
+            .filter(|op| op.status == Status::OutOfDate)
+            .collect()
+    }
+
+    pub fn missing(&self) -> Vec<&FileOperation> {
+        self.operations.iter()
+            .filter(|op| op.status == Status::Missing)
+            .collect()
+    }
+
+    pub fn pending_count(&self) -> usize {
+        self.operations.iter()
+            .filter(|x| x.status != Status::Present)
+            .count()
+    }
+
+    pub fn has_pending_operations(&self) -> bool {
+        self.pending_count() > 0
+    }
+
+    pub fn total_download_size(&self) -> i64 {
+        self.operations.iter()
+            .filter(|x| x.status != Status::Present)
+            .map(|x| x.patch_file.size)
+            .sum()
+    }
+
+    pub fn disk_space_change(&self) -> i64 {
+        self.operations.iter()
+            .filter(|x| x.status != Status::Present)
+            .map(|x| x.patch_file.size - x.size as i64)
+            .sum()
+    }
+
+    pub async fn download(&self) -> Result<(), Box<dyn Error>> {
         let http_client = reqwest::Client::new();
-        for op in file_operations {
+        for op in self.operations.iter() {
             let dest_path = std::path::Path::new(&op.patch_file.path);
             if let Some(dir) = dest_path.parent() {
                 tokio::fs::create_dir_all(dir).await?;
@@ -147,68 +254,5 @@ impl<'a> FileOperation<'a> {
             println!("Downloaded {} to {:?}", &op.patch_file.url, dest_path);
         }
         Ok(())
-    }
-}
-
-pub fn show_transaction_overview(manifest: &Manifest, operations: &Vec<FileOperation>) {
-    println!("\nManifest Overview:");
-    println!(" Version: {}", manifest.version);
-
-    println!("\n {}", "Up-to-date files:".green());
-    for op in operations.iter().filter(|op| op.status == Status::Present) {
-        println!("  {} (Size: {})",
-            op.patch_file.path.green(),
-            humansize::format_size(op.size, BINARY)
-        );
-    }
-
-    println!("\n {}", "Outdated files (will be updated):".yellow());
-    for op in operations.iter().filter(|op| op.status == Status::OutOfDate) {
-        println!("  {} (Current Size: {}, New Size: {})",
-            op.patch_file.path.yellow(),
-            humansize::format_size(op.size, BINARY),
-            humansize::format_size(op.patch_file.size as u64, BINARY)
-        );
-    }
-
-    println!("\n {}", "Missing files (will be downloaded):".red());
-    for op in operations.iter().filter(|op| op.status == Status::Missing) {
-        println!("  {} (New Size: {})",
-            op.patch_file.path.red(),
-            humansize::format_size(op.patch_file.size as u64, BINARY)
-        );
-    }
-
-    println!("\nTransaction Summary:");
-    println!(" Installing/Updating: {} files", operations.iter().filter(|x| x.status != Status::Present).count());
-
-    // Calculate totals for non-present files
-    let pending_ops: Vec<_> = operations.iter()
-        .filter(|x| x.status != Status::Present)
-        .collect();
-
-    if !pending_ops.is_empty() {
-        let total_download_size: i64 = pending_ops.iter()
-            .map(|x| x.patch_file.size)
-            .sum();
-
-        let disk_space_change: i64 = pending_ops.iter()
-            .map(|x| x.patch_file.size - x.size as i64)
-            .sum();
-
-        println!("\nTransaction Summary:");
-        println!(" Installing/Updating: {} files", pending_ops.len());
-        println!("\nTotal size of inbound files is {}. Need to download {}.",
-            humansize::format_size(total_download_size as u64, BINARY),
-            humansize::format_size(total_download_size as u64, BINARY)
-        );
-
-        if disk_space_change > 0 {
-            println!("After this operation, {} of additional disk space will be used.",
-                humansize::format_size(disk_space_change as u64, BINARY));
-        } else {
-            println!("After this operation, {} of disk space will be freed.",
-                humansize::format_size(disk_space_change.abs() as u64, BINARY));
-        }
     }
 }

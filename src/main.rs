@@ -1,15 +1,13 @@
 use std::process;
 use std::error::Error;
 
-use rs_manifest_patcher::manifest;
 use rs_manifest_patcher::manifest::FileOperation;
+use rs_manifest_patcher::manifest::Transaction;
 use rs_manifest_patcher::prompt;
 use tokio;
 
 use rs_manifest_patcher::Config;
 use rs_manifest_patcher::Manifest;
-use std::path::Path;
-use reqwest;
 
 #[tokio::main]
 async fn main() {
@@ -26,13 +24,16 @@ async fn main() {
 
 async fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let manifest = Manifest::build(&config.manifest_location).await?;
-    dbg!(&manifest);
-    let file_operations = FileOperation::process(&manifest);
-    dbg!(&file_operations);
-    manifest::show_transaction_overview(&manifest, &file_operations);
+    let transaction = Transaction::new(&manifest);
+
+    transaction.print();
     if !prompt::confirm("Is this ok")? {
         process::exit(1);
     }
-    // Download Files, create directories if needed
+
+    if transaction.has_pending_operations() {
+        transaction.download().await?;
+    }
+
     Ok(())
 }
