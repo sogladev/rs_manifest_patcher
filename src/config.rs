@@ -1,13 +1,10 @@
 use clap::{arg, Command};
-use std::net::IpAddr;
-use std::path::PathBuf;
-use std::fs;
 
 use crate::manifest;
 
 #[derive(Debug)]
 pub struct Config {
-    pub manifest: manifest::Location,
+    pub manifest_location: manifest::Location,
 }
 
 impl Config {
@@ -21,19 +18,9 @@ impl Config {
 
         let manifest_str = matches.get_one::<String>("manifest").unwrap().to_string();
 
-        // Validate if manifest is either an IP address or a readable file path
-        let manifest = if let Ok(url) = manifest_str.parse::<IpAddr>() {
-            manifest::Location::Url(url)
-        } else {
-            let path = PathBuf::from(&manifest_str);
-            if path.try_exists().is_ok() && fs::File::open(&path).is_ok() {
-                manifest::Location::FilePath(path)
-            } else {
-                return Err("Manifest location must be a valid URL (e.g., http://localhost:8080/manifest.json) or a readable file path");
-            }
-        };
+        let manifest = manifest::Location::parse(manifest_str)?;
 
         dbg!(&manifest);
-        Ok(Config { manifest })
+        Ok(Config { manifest_location: manifest })
     }
 }
