@@ -1,35 +1,26 @@
-use std::fs;
 use std::process;
 use std::error::Error;
 
-use rs_manifest_patcher::config::Config;
-use rs_manifest_patcher::Location;
+use rs_manifest_patcher::Config;
+use rs_manifest_patcher::manifest::Manifest;
 
-fn main() {
+use tokio;
+
+#[tokio::main]
+async fn main() {
     let config = Config::build().unwrap_or_else(|err| {
         println!("Problem parsing arguments: {err}");
         process::exit(1);
     });
 
-    if let Err(e) = run(config) {
+    if let Err(e) = run(config).await {
         println!("Application error: {e}");
         process::exit(1);
     }
 }
 
-fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let contents = match config.manifest_location {
-        Location::Url(url) => {
-            println!("URL: {url}");
-            "Not implemented yet".to_string()
-        }
-        Location::FilePath(file_path) => {
-            println!("File path: {:?}", file_path);
-            fs::read_to_string(file_path)?
-        }
-    };
-
-    println!("With text:\n{contents}");
-
+async fn run(config: Config) -> Result<(), Box<dyn Error>> {
+    let manifest = Manifest::build(&config.manifest_location).await?;
+    println!("Manifest: {:?}", manifest);
     Ok(())
 }
