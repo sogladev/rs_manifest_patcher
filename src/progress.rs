@@ -47,7 +47,7 @@ impl Progress {
         if self.current >= self.total {
             print!("\r{:width$}", "", width = TOTAL_LINE_WIDTH); // Clear the line
             println!(
-                "\r[{:<width$}/{}] {:<filename_width$} {} 100% (complete) {}         ",
+                "\r[{:>width$}/{}] {:<filename_width$} {} 100% (complete) {}         ",
                 self.file_index,
                 self.total_files,
                 filename,
@@ -59,7 +59,7 @@ impl Progress {
 
         } else {
             print!(
-                "\r[{:<width$}/{}] {:<filename_width$} {} {:5.1}% {:8}/s {}",
+                "\r[{:>width$}/{}] {:<filename_width$} {} {:5.1}% {:8}/s {}",
                 self.file_index,
                 self.total_files,
                 filename,
@@ -72,6 +72,5 @@ impl Progress {
             );
             std::io::stdout().flush().unwrap(); // Ensure the output is flushed immediately
         }
-
     }
 }
