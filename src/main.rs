@@ -4,7 +4,7 @@ use std::error::Error;
 use tokio;
 
 use rs_manifest_patcher::Config;
-use rs_manifest_patcher::manifest::Manifest;
+use rs_manifest_patcher::Manifest;
 
 #[tokio::main]
 async fn main() {
