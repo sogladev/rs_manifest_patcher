@@ -34,13 +34,14 @@ async fn run(config: Config) -> Result<(), Box<dyn Error>> {
         process::exit(1);
     }
     // Download Files, create directories if needed
+    let http_client = reqwest::Client::new();
     for op in file_operations {
         let dest_path = Path::new(&op.patch_file.path);
         if let Some(dir) = dest_path.parent() {
             tokio::fs::create_dir_all(dir).await?;
         }
 
-        let response = reqwest::get(&op.patch_file.url).await?;
+        let response = http_client.get(&op.patch_file.url).send().await?;
         if !response.status().is_success() {
             eprintln!("Failed to download {}: {}", &op.patch_file.url, response.status());
             continue;
