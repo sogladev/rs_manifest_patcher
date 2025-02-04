@@ -16,10 +16,11 @@ enum Status {
 }
 
 struct FileOperation<'a> {
-    hash: String,
     patch_file: &'a PatchFile,
     size: u64,
     status: Status,
+    #[cfg(debug_assertions)]
+    hash: String,
 }
 
 impl<'a> FileOperation<'a> {
@@ -35,6 +36,7 @@ impl<'a> FileOperation<'a> {
                     ).len();
 
                     FileOperation {
+                        #[cfg(debug_assertions)]
                         hash: file.hash.clone(),
                         status: if digest_str == file.hash {
                             Status::Present
@@ -46,6 +48,7 @@ impl<'a> FileOperation<'a> {
                     }
                 }
                 Err(_) => FileOperation {
+                    #[cfg(debug_assertions)]
                     hash: "".to_string(),
                     status: Status::Missing,
                     patch_file: file,
@@ -80,6 +83,11 @@ impl<'a> Transaction<'a> {
                 op.patch_file.path.green(),
                 humansize::format_size(op.size, BINARY)
             );
+            #[cfg(debug_assertions)]
+            println!(
+                "    Debug: Actual Hash: {}, Expected Hash: {}",
+                op.hash, op.patch_file.hash
+            );
         }
 
         println!("\n {}", "Outdated files (will be updated):".yellow());
@@ -89,6 +97,11 @@ impl<'a> Transaction<'a> {
                 humansize::format_size(op.size, BINARY),
                 humansize::format_size(op.patch_file.size as u64, BINARY)
             );
+            #[cfg(debug_assertions)]
+            println!(
+                "    Debug: Actual Hash: {}, Expected Hash: {}",
+                op.hash, op.patch_file.hash
+            );
         }
 
         println!("\n {}", "Missing files (will be downloaded):".red());
@@ -97,6 +110,8 @@ impl<'a> Transaction<'a> {
                 op.patch_file.path.red(),
                 humansize::format_size(op.patch_file.size as u64, BINARY)
             );
+            #[cfg(debug_assertions)]
+            println!("    Debug: Expected Hash: {}", op.patch_file.hash);
         }
 
         if self.has_pending_operations() {
