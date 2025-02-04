@@ -1,8 +1,6 @@
 use std::error::Error;
 use std::process;
 
-use tokio;
-
 use rs_manifest_patcher::{banner, prompt};
 use rs_manifest_patcher::{Config, Manifest, Transaction};
 

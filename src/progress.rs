@@ -1,5 +1,6 @@
 use std::io::Write;
 use std::time::Duration;
+
 use humansize::{format_size, DECIMAL};
 
 const MAX_FILENAME_LENGTH: usize = 25;

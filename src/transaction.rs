@@ -23,7 +23,7 @@ struct FileOperation<'a> {
     hash: String,
 }
 
-impl<'a> FileOperation<'a> {
+impl FileOperation<'_> {
     /// Process the manifest and return a list of file operations
     fn process(manifest: &Manifest) -> Vec<FileOperation> {
         manifest.files.iter().map(|file| {
@@ -128,7 +128,7 @@ impl<'a> Transaction<'a> {
                     humansize::format_size(disk_space_change as u64, BINARY));
             } else {
                 println!("After this operation, {} of disk space will be freed.",
-                    humansize::format_size(disk_space_change.abs() as u64, BINARY));
+                    humansize::format_size(disk_space_change.unsigned_abs(), BINARY));
             }
         }
     }

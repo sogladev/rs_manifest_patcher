@@ -69,8 +69,8 @@ impl Manifest {
     /// Retrieve Manifest Data
     pub async fn build(location: &Location) -> Result<Manifest, Box<dyn Error>> {
         let contents = match location {
-            Location::Url(url) => Manifest::from_url(&url).await?,
-            Location::FilePath(file_path) => Manifest::from_file(&file_path)?
+            Location::Url(url) => Manifest::from_url(url).await?,
+            Location::FilePath(file_path) => Manifest::from_file(file_path)?
         };
 
         let manifest: Manifest = serde_json::from_str(&contents)?;
