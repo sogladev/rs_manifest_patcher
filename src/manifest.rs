@@ -128,8 +128,27 @@ impl<'a> FileOperation<'a> {
             }
         }).collect()
     }
-}
+    pub async fn download<'b>(file_operations: &Vec<FileOperation<'b>>) -> Result<(), Box<dyn Error>> {
+        let http_client = reqwest::Client::new();
+        for op in file_operations {
+            let dest_path = std::path::Path::new(&op.patch_file.path);
+            if let Some(dir) = dest_path.parent() {
+                tokio::fs::create_dir_all(dir).await?;
+            }
 
+            let response = http_client.get(&op.patch_file.url).send().await?;
+            if !response.status().is_success() {
+                eprintln!("Failed to download {}: {}", &op.patch_file.url, response.status());
+                continue;
+            }
+
+            let content = response.bytes().await?;
+            tokio::fs::write(dest_path, &content).await?;
+            println!("Downloaded {} to {:?}", &op.patch_file.url, dest_path);
+        }
+        Ok(())
+    }
+}
 
 pub fn show_transaction_overview(manifest: &Manifest, operations: &Vec<FileOperation>) {
     println!("\nManifest Overview:");
