@@ -101,32 +101,31 @@ impl<'a> FileOperation<'a> {
         for file in manifest.files.iter() {
             dbg!(&file);
             let path = PathBuf::from(&file.path);
-            println!("{:?}", path);
-            if path.exists() {
-                if let Ok(contents) = fs::read(path) {
-                    let digest = md5::compute(contents);
-                    let digest_str = format!("{:x}", digest);
-                    let new_size = std::fs::metadata(&file.path).unwrap().size();
-                    if digest_str == file.hash {
-                        operations.push(FileOperation {
-                            hash: file.hash.clone(),
-                            status: Status::Present,
-                            patch_file: file,
-                            size: new_size,
-                        });
-                    }
-                    else {
-                        dbg!("Out of date! Update file");
-                        operations.push(FileOperation {
-                            hash: file.hash.clone(),
-                            status: Status::OutOfDate,
-                            patch_file: file,
-                            size: new_size,
-                        });
-
-                    }
-                    continue;
+            if let Ok(contents) = fs::read(path) {
+                let digest = md5::compute(contents);
+                let digest_str = format!("{:x}", digest);
+                let new_size = std::fs::metadata(&file.path).unwrap_or_else(
+                    |_| panic!("Failed to read metadata for file: {:?}", &file.path)
+                ).size();
+                if digest_str == file.hash {
+                    operations.push(FileOperation {
+                        hash: file.hash.clone(),
+                        status: Status::Present,
+                        patch_file: file,
+                        size: new_size,
+                    });
                 }
+                else {
+                    dbg!("Out of date! Update file");
+                    operations.push(FileOperation {
+                        hash: file.hash.clone(),
+                        status: Status::OutOfDate,
+                        patch_file: file,
+                        size: new_size,
+                    });
+
+                }
+                continue;
             }
             operations.push(FileOperation {
                 hash: "".to_string(),
