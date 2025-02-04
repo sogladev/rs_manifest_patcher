@@ -95,45 +95,34 @@ pub struct FileOperation<'a> {
 }
 
 impl<'a> FileOperation<'a> {
+    /// Process the manifest and return a list of file operations
     pub fn process(manifest: &Manifest) -> Vec<FileOperation> {
-        let mut operations = Vec::new();
-
-        for file in manifest.files.iter() {
-            dbg!(&file);
-            let path = PathBuf::from(&file.path);
-            if let Ok(contents) = fs::read(path) {
-                let digest = md5::compute(contents);
-                let digest_str = format!("{:x}", digest);
-                let new_size = std::fs::metadata(&file.path).unwrap_or_else(
-                    |_| panic!("Failed to read metadata for file: {:?}", &file.path)
-                ).size();
-                if digest_str == file.hash {
-                    operations.push(FileOperation {
+        manifest.files.iter().map(|file| {
+            match fs::read(&file.path) {
+                Ok(contents) => {
+                    let digest = md5::compute(contents);
+                    let digest_str = format!("{:x}", digest);
+                    let new_size = std::fs::metadata(&file.path).unwrap_or_else(
+                        |_| panic!("Failed to read metadata for file: {:?}", &file.path)
+                    ).size();
+                    FileOperation {
                         hash: file.hash.clone(),
-                        status: Status::Present,
+                        status: if digest_str == file.hash {
+                            Status::Present
+                        } else {
+                            Status::OutOfDate
+                        },
                         patch_file: file,
                         size: new_size,
-                    });
+                    }
                 }
-                else {
-                    dbg!("Out of date! Update file");
-                    operations.push(FileOperation {
-                        hash: file.hash.clone(),
-                        status: Status::OutOfDate,
-                        patch_file: file,
-                        size: new_size,
-                    });
-
+                Err(_) => FileOperation {
+                    hash: "".to_string(),
+                    status: Status::Missing,
+                    patch_file: file,
+                    size: 0,
                 }
-                continue;
             }
-            operations.push(FileOperation {
-                hash: "".to_string(),
-                status: Status::Missing,
-                patch_file: file,
-                size: 0,
-            });
-        }
-        operations
+        }).collect()
     }
 }
