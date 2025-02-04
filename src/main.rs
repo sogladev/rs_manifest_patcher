@@ -21,11 +21,6 @@ fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents = match config.manifest_location {
         Location::Url(url) => {
             println!("URL: {url}");
-            let mut response = Vec::new();
-            http_req::request::get(url.as_str(), &mut response)
-                .map_err(|err| format!("HTTP request failed: {}", err))?;
-            let contents = String::from_utf8(response)
-                .map_err(|err| format!("Parsing response as UTF-8 failed: {}", err))?;
             "Not implemented yet".to_string()
         }
         Location::FilePath(file_path) => {
