@@ -1,11 +1,18 @@
 
 use clap::{arg, Command};
 use std::net::IpAddr;
-use std::path::Path;
+use std::path::PathBuf;
+use std::fs;
+
+#[derive(Debug, Clone)]
+pub enum ManifestLocation {
+    IpAddr(IpAddr),
+    FilePath(PathBuf),
+}
 
 #[derive(Debug)]
 pub struct Config {
-    pub manifest: String,
+    pub manifest: ManifestLocation,
 }
 
 impl Config {
@@ -17,12 +24,19 @@ impl Config {
                     .default_value("manifest.json"))
             .get_matches();
 
-        let manifest = matches.get_one::<String>("manifest").unwrap().to_string();
+        let manifest_str = matches.get_one::<String>("manifest").unwrap().to_string();
 
-        // Validate if manifest is either an IP address or a file path
-        if  Path::new(&manifest).try_exists().is_err() || manifest.parse::<IpAddr>().is_err() {
-            return Err("Manifest must be a valid IP address or an existing file path");
-        }
+        // Validate if manifest is either an IP address or a readable file path
+        let manifest = if let Ok(ip_addr) = manifest_str.parse::<IpAddr>() {
+            ManifestLocation::IpAddr(ip_addr)
+        } else {
+            let path = PathBuf::from(&manifest_str);
+            if path.try_exists().is_ok() && fs::File::open(&path).is_ok() {
+                ManifestLocation::FilePath(path)
+            } else {
+                return Err("Manifest must be a valid IP address or a readable file path");
+            }
+        };
 
         dbg!(&manifest);
         Ok(Config { manifest })
