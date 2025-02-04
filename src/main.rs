@@ -19,8 +19,8 @@ fn main() {
 
 fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents = match config.manifest_location {
-        Location::Url(ip_addr) => {
-            println!("IP address: {ip_addr}");
+        Location::Url(url) => {
+            println!("URL: {url}");
             "Not implemented yet".to_string()
         }
         Location::FilePath(file_path) => {
