@@ -37,24 +37,20 @@ impl Location {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct PatchFile {
-    #[serde(rename = "Path")]
     pub path: String,
-    #[serde(rename = "Hash")]
     pub hash: String,
-    #[serde(rename = "Size")]
     pub size: i64,
-    #[serde(rename = "Custom")]
     pub custom: bool,
     #[serde(rename = "URL")]
     pub url: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct Manifest {
-    #[serde(rename = "Version")]
     pub version: String,
-    #[serde(rename = "Files")]
     pub files: Vec<PatchFile>,
 }
 
