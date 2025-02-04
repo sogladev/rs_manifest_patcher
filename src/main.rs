@@ -1,6 +1,7 @@
 use std::process;
 use std::error::Error;
 
+use rs_manifest_patcher::manifest;
 use rs_manifest_patcher::manifest::FileOperation;
 use tokio;
 
@@ -25,5 +26,6 @@ async fn run(config: Config) -> Result<(), Box<dyn Error>> {
     dbg!(&manifest);
     let file_operations = FileOperation::process(&manifest);
     dbg!(&file_operations);
+    manifest::show_transaction_overview(&manifest, &file_operations);
     Ok(())
 }
