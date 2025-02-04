@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, os::unix::fs::MetadataExt};
 use std::path::PathBuf;
 use std::error::Error;
 
@@ -26,7 +26,7 @@ impl Location {
         }
 
         let path = PathBuf::from(&manifest_str);
-        if path.try_exists().is_ok() && fs::File::open(&path).is_ok() {
+        if path.exists() && fs::File::open(&path).is_ok() {
             return Ok(Location::FilePath(path));
         }
 
@@ -76,5 +76,65 @@ impl Manifest {
 
         let manifest: Manifest = serde_json::from_str(&contents)?;
         Ok(manifest)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Status {
+    Present,
+    OutOfDate,
+    Missing
+}
+
+#[derive(Debug, Clone)]
+pub struct FileOperation<'a> {
+    pub hash: String,
+    pub patch_file: &'a PatchFile,
+    pub size: u64,
+    pub status: Status,
+}
+
+impl<'a> FileOperation<'a> {
+    pub fn process(manifest: &Manifest) -> Vec<FileOperation> {
+        let mut operations = Vec::new();
+
+        for file in manifest.files.iter() {
+            dbg!(&file);
+            let path = PathBuf::from(&file.path);
+            println!("{:?}", path);
+            if path.exists() {
+                if let Ok(contents) = fs::read(path) {
+                    let digest = md5::compute(contents);
+                    let digest_str = format!("{:x}", digest);
+                    let new_size = std::fs::metadata(&file.path).unwrap().size();
+                    if digest_str == file.hash {
+                        operations.push(FileOperation {
+                            hash: file.hash.clone(),
+                            status: Status::Present,
+                            patch_file: file,
+                            size: new_size,
+                        });
+                    }
+                    else {
+                        dbg!("Out of date! Update file");
+                        operations.push(FileOperation {
+                            hash: file.hash.clone(),
+                            status: Status::OutOfDate,
+                            patch_file: file,
+                            size: new_size,
+                        });
+
+                    }
+                    continue;
+                }
+            }
+            operations.push(FileOperation {
+                hash: "".to_string(),
+                status: Status::Missing,
+                patch_file: file,
+                size: 0,
+            });
+        }
+        operations
     }
 }

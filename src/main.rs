@@ -1,6 +1,7 @@
 use std::process;
 use std::error::Error;
 
+use rs_manifest_patcher::manifest::FileOperation;
 use tokio;
 
 use rs_manifest_patcher::Config;
@@ -22,5 +23,7 @@ async fn main() {
 async fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let manifest = Manifest::build(&config.manifest_location).await?;
     dbg!(&manifest);
+    let file_operations = FileOperation::process(&manifest);
+    dbg!(&file_operations);
     Ok(())
 }
