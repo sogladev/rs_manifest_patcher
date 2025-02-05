@@ -6,6 +6,9 @@ use rs_manifest_patcher::{Config, Manifest, Transaction};
 
 #[tokio::main]
 async fn main() {
+    #[cfg(not(unix))]
+    colored::control::set_virtual_terminal(true).unwrap();
+
     let config = Config::build().unwrap_or_else(|err| {
         println!("Problem parsing arguments: {err}");
         process::exit(1);
