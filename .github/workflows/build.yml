@@ -25,43 +25,27 @@ jobs:
       - name: test
         run: cargo test --verbose
   build:
-    name: build on ${{ matrix.os }}
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - os: ubuntu-latest
-            bin: rs_manifest_patcher
-            target: x86_64-unknown-linux-gnu
-            releasebin: rs_manifest_patcher-linux-x86_64
-          - os: windows-latest
-            bin: rs_manifest_patcher.exe
-            target: x86_64-pc-windows-gnu
-            releasebin: rs_manifest_patcher-windows-x86_64.exe
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: moonrepo/setup-rust@v1
         with:
           targets: x86_64-unknown-linux-gnu, x86_64-pc-windows-gnu
-      - name: Build {{ matrix.os }}
+      - name: Prepare dist directory
+        run: mkdir -p dist
+      - name: Copy LICENSE to dist
+        run: cp LICENSE dist/
+      - name: Build Linux
         run: |
-         cargo build --locked --release --target ${{ matrix.target }}
-
-      - name: Rename release binary ${{ matrix.bin }} for ${{ matrix.os }}
+          cargo build --locked --release --target x86_64-unknown-linux-gnu
+          mv ./target/x86_64-unknown-linux-gnu/release/rs_manifest_patcher rs_manifest_patcher-linux-x86_64
+      - name: Build Windows
         run: |
-          mv ./target/${{ matrix.target }}/release/${{ matrix.bin }} ${{ matrix.releasebin }}
-      - name: Upload release binary ${{ matrix.bin }} for ${{ matrix.os }}
-        if: ${{ matrix.os == 'windows-latest' }}
+         cargo build --locked --release --target x86_64-pc-windows-gnu
+          mv ./target/x86_64-pc-windows-gnu/release/rs_manifest_patcher.exe rs_manifest_patcher-windows-x86_64.exe
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts-windows
-          path: ${{ matrix.releasebin }}
-          retention-days: 3
-      - name: Upload release binary ${{ matrix.bin }} for ${{ matrix.os }}
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts-linux
-          path: ${{ matrix.releasebin }}
+          name: build-artifacts
+          path: dist/
           retention-days: 3
