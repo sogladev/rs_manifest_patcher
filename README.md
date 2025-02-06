@@ -10,6 +10,8 @@ Feature comparison with [go-manifest-patcher](https://github.com/sogladev/go-man
 - Terminal colors for Windows are supported.
 - Extra file checking for local files not in the manifest is not implemented.
 
+![rs patcher](images/rs_patcher.gif)
+
 ## Test/develop with Test Server for Go Manifest Patcher
 https://github.com/sogladev/go-manifest-patcher/tree/main/server
 > This is a test server application designed to simulate file downloads for the patcher download client. It provides manifest generation and throttled file serving capabilities.
