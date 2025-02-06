@@ -11,7 +11,7 @@ impl Config {
     pub fn build() -> Result<Config, &'static str> {
         let matches = Command::new("rs_manifest_patcher")
             .arg(arg!(-m --manifest <String> "Path to manifest.json file or URL (e.g., http://localhost:8080/manifest.json)")
-                .default_value("manifest.json"))
+                .default_value("https://updater.project-epoch.net/api/manifest?environment=production&internal_key="))
             .get_matches();
 
         let manifest_str = matches.get_one::<String>("manifest").unwrap().to_string();
