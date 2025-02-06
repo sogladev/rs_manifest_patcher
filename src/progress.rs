@@ -59,7 +59,7 @@ impl Progress {
             );
         } else {
             print!(
-                "\r[{:>width$}/{}] {:<filename_width$} {} {:5.1}% {:8}/s {}",
+                "\r[{:>width$}/{}] {:<filename_width$} {} {:5.1}% {:<8}/s {}",
                 self.file_index,
                 self.total_files,
                 filename,

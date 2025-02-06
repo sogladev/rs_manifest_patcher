@@ -35,7 +35,7 @@ async fn run(config: Config) -> Result<(), Box<dyn Error>> {
         transaction.download().await?;
     }
 
-    println!("\n{}", "-".repeat(96));
+    println!("\n{}", "-".repeat(100));
     println!("All files are up to date or successfully downloaded.");
 
     Ok(())
