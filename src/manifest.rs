@@ -73,7 +73,14 @@ impl Manifest {
             Location::FilePath(file_path) => Manifest::from_file(file_path)?,
         };
 
-        let manifest: Manifest = serde_json::from_str(&contents)?;
+        let mut manifest: Manifest = serde_json::from_str(&contents)?;
+
+        // Convert path from Windows to Unix format
+        manifest
+            .files
+            .iter_mut()
+            .for_each(|file| file.path = file.path.replace("\\", "/"));
+
         Ok(manifest)
     }
 }
