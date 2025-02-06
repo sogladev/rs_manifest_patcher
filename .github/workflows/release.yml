@@ -35,7 +35,7 @@ jobs:
           draft: true
           prerelease: false
           files: |
-            rs_manifest_patcher-linux-x86_64
-            rs_manifest_patcher-windows-x86_64.exe
+            epoch_patcher-linux-x86_64
+            epoch_patcher-windows-x86_64.exe
             LICENSE
             README.md
