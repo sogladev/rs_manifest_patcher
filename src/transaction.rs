@@ -3,6 +3,7 @@ use std::error::Error;
 use colored::Colorize;
 use futures::StreamExt;
 use humansize::{self, BINARY};
+use serde::{Deserialize, Serialize};
 use tokio::io::AsyncWriteExt;
 
 use super::manifest::{Manifest, PatchFile};
@@ -62,6 +63,7 @@ pub struct Transaction<'a> {
     manifest: &'a Manifest,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TransactionReport {
     pub version: String,
     pub up_to_date_files: Vec<String>,
