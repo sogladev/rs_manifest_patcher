@@ -19,8 +19,6 @@ struct FileOperation<'a> {
     patch_file: &'a PatchFile,
     size: u64,
     status: Status,
-    #[cfg(debug_assertions)]
-    hash: String,
 }
 
 impl FileOperation<'_> {
@@ -40,8 +38,6 @@ impl FileOperation<'_> {
                         .len();
 
                     FileOperation {
-                        #[cfg(debug_assertions)]
-                        hash: file.hash.clone(),
                         status: if digest_str == file.hash {
                             Status::Present
                         } else {
@@ -52,8 +48,6 @@ impl FileOperation<'_> {
                     }
                 }
                 Err(_) => FileOperation {
-                    #[cfg(debug_assertions)]
-                    hash: "".to_string(),
                     status: Status::Missing,
                     patch_file: file,
                     size: 0,
@@ -68,6 +62,15 @@ pub struct Transaction<'a> {
     manifest: &'a Manifest,
 }
 
+pub struct TransactionReport {
+    pub version: String,
+    pub up_to_date_files: Vec<String>,
+    pub outdated_files: Vec<String>,
+    pub missing_files: Vec<String>,
+    pub total_download_size: u64,
+    pub disk_space_change: i64,
+}
+
 impl<'a> Transaction<'a> {
     pub fn new(manifest: &'a Manifest) -> Self {
         let operations = FileOperation::process(manifest);
@@ -77,48 +80,47 @@ impl<'a> Transaction<'a> {
         }
     }
 
+    pub fn generate_report(&self) -> TransactionReport {
+        TransactionReport {
+            version: self.manifest.version.clone(),
+            up_to_date_files: self
+                .up_to_date()
+                .iter()
+                .map(|op| op.patch_file.path.clone())
+                .collect(),
+            outdated_files: self
+                .outdated()
+                .iter()
+                .map(|op| op.patch_file.path.clone())
+                .collect(),
+            missing_files: self
+                .missing()
+                .iter()
+                .map(|op| op.patch_file.path.clone())
+                .collect(),
+            total_download_size: self.total_download_size() as u64,
+            disk_space_change: self.disk_space_change(),
+        }
+    }
+
     pub fn print(&self) {
+        let report = self.generate_report();
         println!("\nManifest Overview:");
-        println!(" Version: {}", self.manifest.version);
+        println!(" Version: {}", report.version);
 
         println!("\n {}", "Up-to-date files:".green());
-        for op in self.up_to_date() {
-            println!(
-                "  {} (Size: {})",
-                op.patch_file.path.green(),
-                humansize::format_size(op.size, BINARY)
-            );
-            #[cfg(debug_assertions)]
-            println!(
-                "    Debug: Actual Hash: {}, Expected Hash: {}",
-                op.hash, op.patch_file.hash
-            );
+        for file in report.up_to_date_files {
+            println!("  {}", file.green());
         }
 
         println!("\n {}", "Outdated files (will be updated):".yellow());
-        for op in self.outdated() {
-            println!(
-                "  {} (Current Size: {}, New Size: {})",
-                op.patch_file.path.yellow(),
-                humansize::format_size(op.size, BINARY),
-                humansize::format_size(op.patch_file.size as u64, BINARY)
-            );
-            #[cfg(debug_assertions)]
-            println!(
-                "    Debug: Actual Hash: {}, Expected Hash: {}",
-                op.hash, op.patch_file.hash
-            );
+        for file in report.outdated_files {
+            println!("  {}", file.yellow());
         }
 
         println!("\n {}", "Missing files (will be downloaded):".red());
-        for op in self.missing() {
-            println!(
-                "  {} (New Size: {})",
-                op.patch_file.path.red(),
-                humansize::format_size(op.patch_file.size as u64, BINARY)
-            );
-            #[cfg(debug_assertions)]
-            println!("    Debug: Expected Hash: {}", op.patch_file.hash);
+        for file in report.missing_files {
+            println!("  {}", file.red());
         }
 
         if self.has_pending_operations() {
@@ -126,11 +128,11 @@ impl<'a> Transaction<'a> {
             println!(" Installing/Updating: {} files", self.pending_count());
             println!(
                 "\nTotal size of inbound files is {}. Need to download {}.",
-                humansize::format_size(self.total_download_size() as u64, BINARY),
-                humansize::format_size(self.total_download_size() as u64, BINARY)
+                humansize::format_size(report.total_download_size, BINARY),
+                humansize::format_size(report.total_download_size, BINARY)
             );
 
-            let disk_space_change = self.disk_space_change();
+            let disk_space_change = report.disk_space_change;
             if disk_space_change > 0 {
                 println!(
                     "After this operation, {} of additional disk space will be used.",
