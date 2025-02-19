@@ -56,24 +56,34 @@ pub struct Manifest {
 }
 
 impl Manifest {
-    fn from_file(file_path: &PathBuf) -> Result<String, std::io::Error> {
-        fs::read_to_string(file_path)
-    }
+    /// Create a new Manifest from JSON string
+    pub fn from_json(json: &str) -> Result<Self, Box<dyn Error>> {
+        let mut manifest: Manifest = serde_json::from_str(json)?;
 
-    async fn from_url(url: &Url) -> Result<String, Box<dyn Error>> {
-        let response = reqwest::get(url.as_str()).await?;
-        let contents = response.text().await?;
-        Ok(contents)
-    }
+        // Convert paths from Windows to Unix format
+        manifest
+            .files
+            .iter_mut()
+            .for_each(|file| file.path = file.path.replace("\\", "/"));
 
-    /// Retrieve Manifest Data
-    pub async fn build(location: &Location) -> Result<Manifest, Box<dyn Error>> {
-        let contents = match location {
-            Location::Url(url) => Manifest::from_url(url).await?,
-            Location::FilePath(file_path) => Manifest::from_file(file_path)?,
-        };
-
-        let manifest: Manifest = serde_json::from_str(&contents)?;
         Ok(manifest)
+    }
+
+    /// Load manifest from a file
+    pub fn from_file(file_path: &PathBuf) -> Result<Self, Box<dyn Error>> {
+        let contents = fs::read_to_string(file_path)?;
+        Self::from_json(&contents)
+    }
+
+    /// Build manifest from a location (URL or file)
+    pub async fn build(location: &Location) -> Result<Self, Box<dyn Error>> {
+        match location {
+            Location::Url(url) => {
+                let response = reqwest::get(url.as_str()).await?;
+                let contents = response.text().await?;
+                Self::from_json(&contents)
+            }
+            Location::FilePath(file_path) => Self::from_file(file_path),
+        }
     }
 }
