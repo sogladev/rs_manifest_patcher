@@ -10,22 +10,23 @@ use tokio::io::AsyncWriteExt;
 use super::manifest::{Manifest, PatchFile};
 use super::Progress;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 enum Status {
     Present,
     OutOfDate,
     Missing,
 }
 
-struct FileOperation<'a> {
-    patch_file: &'a PatchFile,
+#[derive(Clone)]
+struct FileOperation {
+    patch_file: PatchFile,
     size: u64,
     status: Status,
 }
 
-impl<'a> FileOperation<'a> {
+impl FileOperation {
     /// Process the manifest and return a list of file operations
-    fn process(manifest: &'a Manifest, base_path: &std::path::Path) -> Vec<FileOperation<'a>> {
+    fn process(manifest: &Manifest, base_path: &std::path::Path) -> Vec<FileOperation> {
         manifest
             .files
             .iter()
@@ -34,7 +35,7 @@ impl<'a> FileOperation<'a> {
                 if !full_path.exists() {
                     return FileOperation {
                         status: Status::Missing,
-                        patch_file: file,
+                        patch_file: file.clone(),
                         size: 0,
                     };
                 }
@@ -55,7 +56,7 @@ impl<'a> FileOperation<'a> {
                             } else {
                                 Status::OutOfDate
                             },
-                            patch_file: file,
+                            patch_file: file.clone(),
                             size: new_size,
                         }
                     }
@@ -68,9 +69,10 @@ impl<'a> FileOperation<'a> {
     }
 }
 
-pub struct Transaction<'a> {
-    operations: Vec<FileOperation<'a>>,
-    manifest: &'a Manifest,
+#[derive(Clone)]
+pub struct Transaction {
+    operations: Vec<FileOperation>,
+    manifest_version: String,
     base_path: PathBuf,
 }
 
@@ -85,19 +87,19 @@ pub struct TransactionReport {
     pub base_path: PathBuf,
 }
 
-impl<'a> Transaction<'a> {
-    pub fn new(manifest: &'a Manifest, base_path: PathBuf) -> Self {
-        let operations = FileOperation::process(manifest, &base_path);
+impl Transaction {
+    pub fn new(manifest: Manifest, base_path: PathBuf) -> Self {
+        let operations = FileOperation::process(&manifest, &base_path);
         Transaction {
             operations,
-            manifest,
+            manifest_version: manifest.version,
             base_path,
         }
     }
 
     pub fn generate_report(&self) -> TransactionReport {
         TransactionReport {
-            version: self.manifest.version.clone(),
+            version: self.manifest_version.clone(),
             up_to_date_files: self
                 .up_to_date()
                 .iter()

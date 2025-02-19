@@ -23,9 +23,9 @@ async fn main() {
 async fn run(config: Config) -> Result<(), Box<dyn Error>> {
     banner::print_banner();
 
-    let manifest = Manifest::build(&config.manifest_location).await?;
     let base_path = std::env::current_dir().expect("Failed to get current directory");
-    let transaction = Transaction::new(&manifest, base_path);
+    let manifest = Manifest::build(&config.manifest_location).await?;
+    let transaction = Transaction::new(manifest, base_path);
 
     transaction.print();
     if !prompt::confirm("Is this ok")? {
