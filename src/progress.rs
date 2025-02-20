@@ -7,17 +7,29 @@ const MAX_FILENAME_LENGTH: usize = 20;
 const PROGRESS_BAR_WIDTH: usize = 20;
 
 #[derive(serde::Serialize)]
+/// Represents the progress information for a file download or processing task.
 pub struct Progress {
+    /// The number of bytes processed for the current file.
     pub current: u64,
+    /// The index of the current file being processed.
     pub file_index: usize,
+    /// The total number of files to be processed.
     pub total_files: usize,
+    /// The current processing speed in bytes per second.
     pub speed: f64,
+    /// The total size of the current file in bytes.
     pub file_size: u64,
+    /// The duration elapsed since the processing of the current file started.
     pub elapsed: Duration,
+    /// The name of the current file.
     pub filename: String,
+    /// The cumulative size of data downloaded across all files.
     pub total_size_downloaded: u64,
+    /// The total amount of data remaining to be downloaded in bytes.
     pub total_amount_left: u64,
+    /// The estimated time (in seconds) remaining to complete the download.
     pub expected_time_left: f64,
+    /// The total download size of all files combined in bytes.
     pub total_download_size: i64,
 }
 

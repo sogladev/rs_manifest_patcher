@@ -18,6 +18,15 @@ pub enum Status {
 }
 
 #[derive(Clone)]
+/// Represents a transaction operation involving file patching.
+///
+/// This struct holds the details for an operation that patches a file, including the patch file data,
+/// the size of the file patch, and the current status of the operation.
+///
+/// # Fields
+/// - `patch_file`: The patch file associated with the operation.
+/// - `size`: The size of the patch, represented as a 64-bit signed integer.
+/// - `status`: The status of the file operation.
 pub struct FileOperation {
     pub patch_file: PatchFile,
     pub size: i64,
