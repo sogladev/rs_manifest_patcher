@@ -224,8 +224,8 @@ impl Transaction {
     pub async fn download(&self) -> Result<(), Box<dyn Error>> {
         let http_client = reqwest::Client::new();
         for (idx, op) in self.pending().iter().enumerate() {
-            let dest_path = std::path::Path::new(&op.patch_file.path);
             // Create parent directories if they don't exist
+            let dest_path = self.base_path.join(&op.patch_file.path);
             if let Some(dir) = dest_path.parent() {
                 tokio::fs::create_dir_all(dir).await?;
             }
@@ -241,7 +241,7 @@ impl Transaction {
             }
 
             let total_size = response.content_length().unwrap_or(0);
-            let mut file = tokio::fs::File::create(dest_path).await?;
+            let mut file = tokio::fs::File::create(dest_path.clone()).await?;
             let start = std::time::Instant::now();
             let mut downloaded: u64 = 0;
 
