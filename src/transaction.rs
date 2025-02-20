@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use colored::Colorize;
 use futures::StreamExt;
-use humansize::{self, BINARY};
+use humansize::BINARY;
 use serde::{Deserialize, Serialize};
 use tokio::io::AsyncWriteExt;
 
@@ -11,17 +11,17 @@ use super::manifest::{Manifest, PatchFile};
 use super::Progress;
 
 #[derive(PartialEq, Clone)]
-enum Status {
+pub enum Status {
     Present,
     OutOfDate,
     Missing,
 }
 
 #[derive(Clone)]
-struct FileOperation {
-    patch_file: PatchFile,
-    size: u64,
-    status: Status,
+pub struct FileOperation {
+    pub patch_file: PatchFile,
+    pub size: i64,
+    pub status: Status,
 }
 
 impl FileOperation {
@@ -44,11 +44,13 @@ impl FileOperation {
                     Ok(contents) => {
                         let digest = md5::compute(contents);
                         let digest_str = format!("{:x}", digest);
-                        let new_size = std::fs::metadata(&full_path)
+                        let new_size: i64 = std::fs::metadata(&full_path)
                             .unwrap_or_else(|_| {
                                 panic!("Failed to read metadata for file: {:?}", &full_path)
                             })
-                            .len();
+                            .len()
+                            .try_into()
+                            .unwrap();
 
                         FileOperation {
                             status: if digest_str == file.hash {
@@ -73,7 +75,7 @@ impl FileOperation {
 pub struct Transaction {
     operations: Vec<FileOperation>,
     manifest_version: String,
-    base_path: PathBuf,
+    pub base_path: PathBuf,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -180,21 +182,21 @@ impl Transaction {
             .collect()
     }
 
-    fn pending(&self) -> Vec<&FileOperation> {
+    pub fn pending(&self) -> Vec<&FileOperation> {
         self.operations
             .iter()
             .filter(|op| op.status != Status::Present)
             .collect()
     }
 
-    fn missing(&self) -> Vec<&FileOperation> {
+    pub fn missing(&self) -> Vec<&FileOperation> {
         self.operations
             .iter()
             .filter(|op| op.status == Status::Missing)
             .collect()
     }
 
-    fn pending_count(&self) -> usize {
+    pub fn pending_count(&self) -> usize {
         self.operations
             .iter()
             .filter(|x| x.status != Status::Present)
@@ -205,12 +207,19 @@ impl Transaction {
         self.pending_count() > 0
     }
 
-    fn total_download_size(&self) -> i64 {
-        self.operations
+    pub fn total_download_size(&self) -> i64 {
+        let total = self
+            .operations
             .iter()
             .filter(|x| x.status != Status::Present)
             .map(|x| x.patch_file.size)
-            .sum()
+            .sum();
+        assert!(
+            total >= 0,
+            "Total download size must be non-negative, but found {}.",
+            total
+        );
+        return total;
     }
 
     fn disk_space_change(&self) -> i64 {
@@ -221,8 +230,13 @@ impl Transaction {
             .sum()
     }
 
-    pub async fn download(&self) -> Result<(), Box<dyn Error>> {
+    pub async fn download<F>(&self, progress_handler: F) -> Result<(), Box<dyn Error>>
+    where
+        F: Fn(&Progress) -> Result<(), Box<dyn Error>> + Send + 'static,
+    {
         let http_client = reqwest::Client::new();
+        let mut total_size_downloaded = 0;
+        let total_download_size = self.total_download_size();
         for (idx, op) in self.pending().iter().enumerate() {
             // Create parent directories if they don't exist
             let dest_path = self.base_path.join(&op.patch_file.path);
@@ -240,32 +254,51 @@ impl Transaction {
                 continue;
             }
 
-            let total_size = response.content_length().unwrap_or(0);
+            let file_size = op.patch_file.size;
             let mut file = tokio::fs::File::create(dest_path.clone()).await?;
             let start = std::time::Instant::now();
             let mut downloaded: u64 = 0;
 
             let mut stream = response.bytes_stream();
             while let Some(chunk) = stream.next().await {
-                let chunk = chunk?;
-                file.write_all(&chunk).await?;
+                let chunk = chunk.map_err(|e| e.to_string())?;
+                file.write_all(&chunk).await.map_err(|e| e.to_string())?;
                 downloaded += chunk.len() as u64;
+                total_size_downloaded += chunk.len() as u64;
 
-                Progress {
+                // Handle potential underflow
+                let total_amount_left =
+                    (total_download_size as u64).saturating_sub(total_size_downloaded);
+
+                // Compute download speed and expected time left
+                let speed = downloaded as f64 / start.elapsed().as_secs_f64();
+                let expected_time_left = if speed > 0.0 {
+                    // Compute remaining time and cap at, say, 24 hours (86400 s).
+                    (total_amount_left as f64 / speed).min(86400.0)
+                } else {
+                    0.0
+                };
+
+                let progress = Progress {
                     current: downloaded,
-                    total: total_size,
                     file_index: idx + 1,
                     total_files: self.pending_count(),
-                    speed: downloaded as f64 / start.elapsed().as_secs_f64(),
-                    file_size: total_size,
+                    speed,
+                    file_size: file_size.try_into().unwrap(),
                     elapsed: start.elapsed(),
                     filename: dest_path
                         .file_name()
                         .unwrap_or_default()
                         .to_string_lossy()
                         .to_string(),
-                }
-                .print();
+
+                    total_size_downloaded,
+                    total_amount_left,
+                    expected_time_left,
+                    total_download_size,
+                };
+
+                progress_handler(&progress)?;
             }
         }
         Ok(())
