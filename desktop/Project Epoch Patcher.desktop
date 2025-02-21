@@ -1,0 +1,19 @@
+[Desktop Entry]
+Comment[en_US]=Unofficial patch download utility
+Comment=Unofficial patch download utility
+Exec=/home/user/Games/wow335epoch/patcher-epoch-linux-amd64
+GenericName[en_US]=Game Client Updater
+GenericName=Game Client Updater
+Icon=epoch
+MimeType=
+Name[en_US]=Project Epoch Patcher
+Name=Project Epoch Patcher
+NoDisplay=false
+Path=/home/user/Games/wow335epoch
+PrefersNonDefaultGPU=false
+StartupNotify=true
+Terminal=true
+TerminalOptions=
+Type=Application
+X-KDE-SubstituteUID=false
+X-KDE-Username=
