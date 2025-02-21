@@ -64,21 +64,21 @@ impl Progress {
         if self.current >= self.file_size {
             print!("\r\x1B[2K"); // Clear the line
             println!(
-                "\r[{:>width$}/{}] {:<filename_width$} {} 100% (complete) | {:<8}/s | {} | ETA: {:.1}s",
+                "\r[{:>width$}/{}] {:<filename_width$} {} 100% (complete) | {:<8}/s | {} | ETA: {}",
                 self.file_index,
                 self.total_files,
                 filename,
                 progress_bar,
                 speed,
                 file_size,
-                self.expected_time_left,
+                crate::format::eta_to_human_readable(self.expected_time_left),
                 width = total_files_width,
                 filename_width = MAX_FILENAME_LENGTH - 1
             );
         } else {
             print!("\r\x1B[2K"); // Clear the line
             print!(
-                "\r[{:>width$}/{}] {:<filename_width$} {} {:5.1}% | {:<8}/s | {} | {} | ETA: {:.1}s",
+                "\r[{:>width$}/{}] {:<filename_width$} {} {:5.1}% | {:<8}/s | {} | {} | ETA: {}",
                 self.file_index,
                 self.total_files,
                 filename,
@@ -87,7 +87,7 @@ impl Progress {
                 speed,
                 file_size,
                 file_left,
-                self.expected_time_left,
+                crate::format::eta_to_human_readable(self.expected_time_left),
                 width = total_files_width,
                 filename_width = MAX_FILENAME_LENGTH - 1
             );

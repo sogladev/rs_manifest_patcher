@@ -1,5 +1,6 @@
 pub mod banner;
 pub mod config;
+pub mod format;
 pub mod manifest;
 pub mod progress;
 pub mod prompt;
