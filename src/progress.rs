@@ -1,4 +1,4 @@
-// use std::io::Write;
+use std::io::Write;
 use std::time::Duration;
 
 use humansize::{format_size, DECIMAL};
@@ -57,40 +57,38 @@ impl Progress {
         let progress_bar = Self::create_progress_bar(self.current, self.file_size);
         let filename = Self::truncate_filename(&self.filename);
         let speed = format_size(self.speed as u64, DECIMAL);
-        let size = format_size(self.file_size, DECIMAL);
         let total_files_width = self.total_files.to_string().len();
-        let total_left = format_size(self.total_amount_left, DECIMAL);
+        let file_left = format_size(self.file_size.saturating_sub(self.current), DECIMAL);
 
         if self.current >= self.file_size {
             print!("\r\x1B[2K"); // Clear the line
             println!(
-                "\r[{:>width$}/{}] {:<filename_width$} {} 100% (complete) | {} | Left: {} | ETA: {:.1}s",
+                "\r[{:>width$}/{}] {:<filename_width$} {} 100% (complete) | {} | ETA: {:.1}s",
                 self.file_index,
                 self.total_files,
                 filename,
                 progress_bar,
-                size,
-                total_left,
+                file_left,
                 self.expected_time_left,
                 width = total_files_width,
                 filename_width = MAX_FILENAME_LENGTH - 1
             );
         } else {
+            print!("\r\x1B[2K"); // Clear the line
             print!(
-                "\r[{:>width$}/{}] {:<filename_width$} {} {:5.1}% | {:<8}/s | {} | Left: {} | ETA: {:.1}s",
+                "\r[{:>width$}/{}] {:<filename_width$} {} {:5.1}% | {:<8}/s | {} | ETA: {:.1}s",
                 self.file_index,
                 self.total_files,
                 filename,
                 progress_bar,
                 percent,
                 speed,
-                size,
-                total_left,
+                file_left,
                 self.expected_time_left,
                 width = total_files_width,
                 filename_width = MAX_FILENAME_LENGTH - 1
             );
-            // std::io::stdout().flush().unwrap(); // Ensure the output is flushed immediately
         }
+        std::io::stdout().flush().unwrap(); // Ensure the output is flushed immediately
     }
 }
