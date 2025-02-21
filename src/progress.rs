@@ -1,21 +1,36 @@
-use std::io::Write;
+// use std::io::Write;
 use std::time::Duration;
 
 use humansize::{format_size, DECIMAL};
 
-const MAX_FILENAME_LENGTH: usize = 25;
+const MAX_FILENAME_LENGTH: usize = 20;
 const PROGRESS_BAR_WIDTH: usize = 20;
-const TOTAL_LINE_WIDTH: usize = 80;
 
+#[derive(serde::Serialize)]
+/// Represents the progress information for a file download or processing task.
 pub struct Progress {
+    /// The number of bytes processed for the current file.
     pub current: u64,
-    pub total: u64,
+    /// The index of the current file being processed.
     pub file_index: usize,
+    /// The total number of files to be processed.
     pub total_files: usize,
+    /// The current processing speed in bytes per second.
     pub speed: f64,
+    /// The total size of the current file in bytes.
     pub file_size: u64,
+    /// The duration elapsed since the processing of the current file started.
     pub elapsed: Duration,
+    /// The name of the current file.
     pub filename: String,
+    /// The cumulative size of data downloaded across all files.
+    pub total_size_downloaded: u64,
+    /// The total amount of data remaining to be downloaded in bytes.
+    pub total_amount_left: u64,
+    /// The estimated time (in seconds) remaining to complete the download.
+    pub expected_time_left: f64,
+    /// The total download size of all files combined in bytes.
+    pub total_download_size: i64,
 }
 
 impl Progress {
@@ -38,28 +53,31 @@ impl Progress {
     }
 
     pub fn print(&self) {
-        let percent = (self.current as f64 / self.total as f64) * 100.0;
-        let progress_bar = Self::create_progress_bar(self.current, self.total);
+        let percent = (self.current as f64 / self.file_size as f64) * 100.0;
+        let progress_bar = Self::create_progress_bar(self.current, self.file_size);
         let filename = Self::truncate_filename(&self.filename);
         let speed = format_size(self.speed as u64, DECIMAL);
         let size = format_size(self.file_size, DECIMAL);
         let total_files_width = self.total_files.to_string().len();
+        let total_left = format_size(self.total_amount_left, DECIMAL);
 
-        if self.current >= self.total {
-            print!("\r{:width$}", "", width = TOTAL_LINE_WIDTH); // Clear the line
+        if self.current >= self.file_size {
+            print!("\r\x1B[2K"); // Clear the line
             println!(
-                "\r[{:>width$}/{}] {:<filename_width$} {} 100% (complete) {}         ",
+                "\r[{:>width$}/{}] {:<filename_width$} {} 100% (complete) | {} | Left: {} | ETA: {:.1}s",
                 self.file_index,
                 self.total_files,
                 filename,
                 progress_bar,
                 size,
+                total_left,
+                self.expected_time_left,
                 width = total_files_width,
                 filename_width = MAX_FILENAME_LENGTH - 1
             );
         } else {
             print!(
-                "\r[{:>width$}/{}] {:<filename_width$} {} {:5.1}% {:<8}/s {}",
+                "\r[{:>width$}/{}] {:<filename_width$} {} {:5.1}% | {:<8}/s | {} | Left: {} | ETA: {:.1}s",
                 self.file_index,
                 self.total_files,
                 filename,
@@ -67,10 +85,12 @@ impl Progress {
                 percent,
                 speed,
                 size,
+                total_left,
+                self.expected_time_left,
                 width = total_files_width,
                 filename_width = MAX_FILENAME_LENGTH - 1
             );
-            std::io::stdout().flush().unwrap(); // Ensure the output is flushed immediately
+            // std::io::stdout().flush().unwrap(); // Ensure the output is flushed immediately
         }
     }
 }

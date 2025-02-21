@@ -8,6 +8,11 @@ use url::Url;
 #[derive(Debug, Clone)]
 pub enum Location {
     Url(Url),
+    /// Wraps a [std::path::PathBuf] representing a file system path.
+    ///
+    /// This field stores an independently owned and mutable file system path.
+    /// It leverages the platform-specific features of [std::path::PathBuf]
+    /// to provide a reliable method for handling file paths regardless of the operating system.
     FilePath(PathBuf),
 }
 
@@ -39,6 +44,15 @@ impl Location {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
+/// Represents a patch file with its associated metadata.
+///
+/// # Fields
+///
+/// * `path` - A string containing the file path where the patch file is located.
+/// * `hash` - A string representing the checksum or hash of the file, used for integrity verification.
+/// * `size` - A 64-bit integer indicating the file size in bytes.
+/// * `custom` - A boolean flag that indicates if the patch file is custom.
+/// * `url` - A string holding the URL related to the patch file. This field is serialized using the name "URL".
 pub struct PatchFile {
     pub path: String,
     pub hash: String,
@@ -50,6 +64,14 @@ pub struct PatchFile {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
+/// Represents a manifest configuration that includes version information
+/// and a collection of patch files.
+///
+/// # Fields
+///
+/// - `version`: A String representing the manifest's version.
+/// - `files`: A vector of `PatchFile` items, each corresponding to a file that is
+///   subject to patching.
 pub struct Manifest {
     pub version: String,
     pub files: Vec<PatchFile>,

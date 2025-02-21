@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::process;
 
-use rs_manifest_patcher::{banner, prompt};
+use rs_manifest_patcher::{banner, prompt, Progress};
 use rs_manifest_patcher::{Config, Manifest, Transaction};
 
 #[tokio::main]
@@ -33,7 +33,11 @@ async fn run(config: Config) -> Result<(), Box<dyn Error>> {
     }
 
     if transaction.has_pending_operations() {
-        transaction.download().await?;
+        let progress_handler = |progress: &Progress| {
+            progress.print();
+            Ok(())
+        };
+        transaction.download(progress_handler).await?;
     }
 
     println!("\n{}", "-".repeat(100));
