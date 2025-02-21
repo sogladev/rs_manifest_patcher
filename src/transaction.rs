@@ -228,14 +228,14 @@ impl Transaction {
             "Total download size must be non-negative, but found {}.",
             total
         );
-        return total;
+        total
     }
 
     fn disk_space_change(&self) -> i64 {
         self.operations
             .iter()
             .filter(|x| x.status != Status::Present)
-            .map(|x| x.patch_file.size - x.size as i64)
+            .map(|x| x.patch_file.size - x.size)
             .sum()
     }
 
