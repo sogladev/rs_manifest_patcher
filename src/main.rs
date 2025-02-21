@@ -28,11 +28,12 @@ async fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let transaction = Transaction::new(manifest, base_path);
 
     transaction.print();
-    if !prompt::confirm("Is this ok")? {
-        process::exit(1);
-    }
 
     if transaction.has_pending_operations() {
+        if !prompt::confirm("Is this ok")? {
+            process::exit(1);
+        }
+
         let progress_handler = |progress: &Progress| {
             progress.print();
             Ok(())
