@@ -4,6 +4,9 @@ use std::process;
 use rs_manifest_patcher::{banner, prompt, Progress};
 use rs_manifest_patcher::{Config, Manifest, Transaction};
 
+#[cfg(target_os = "windows")]
+use std::io::Write;
+
 #[tokio::main]
 async fn main() {
     #[cfg(not(unix))]
@@ -28,11 +31,12 @@ async fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let transaction = Transaction::new(manifest, base_path);
 
     transaction.print();
-    if !prompt::confirm("Is this ok")? {
-        process::exit(1);
-    }
 
     if transaction.has_pending_operations() {
+        if !prompt::confirm("Is this ok")? {
+            process::exit(1);
+        }
+
         let progress_handler = |progress: &Progress| {
             progress.print();
             Ok(())
@@ -42,6 +46,14 @@ async fn run(config: Config) -> Result<(), Box<dyn Error>> {
 
     println!("\n{}", "-".repeat(100));
     println!("All files are up to date or successfully downloaded.");
+
+    #[cfg(target_os = "windows")]
+    {
+        println!("\nPress Enter to exit...");
+        let _ = std::io::stdout().flush();
+        let mut input = String::new();
+        let _ = std::io::stdin().read_line(&mut input);
+    }
 
     Ok(())
 }
