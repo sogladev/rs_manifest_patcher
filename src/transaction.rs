@@ -139,18 +139,31 @@ impl Transaction {
         println!(" Base path: {}", report.base_path.display());
 
         println!("\n {}", "Up-to-date files:".green());
-        for file in report.up_to_date_files {
-            println!("  {}", file.green());
+        for op in self.up_to_date() {
+            println!(
+                "  {} (Size: {})",
+                op.patch_file.path.green(),
+                humansize::format_size(op.size as u64, BINARY)
+            );
         }
 
         println!("\n {}", "Outdated files (will be updated):".yellow());
-        for file in report.outdated_files {
-            println!("  {}", file.yellow());
+        for op in self.outdated() {
+            println!(
+                "  {} (Current Size: {}, New Size: {})",
+                op.patch_file.path.yellow(),
+                humansize::format_size(op.size as u64, BINARY),
+                humansize::format_size(op.patch_file.size as u64, BINARY)
+            );
         }
 
         println!("\n {}", "Missing files (will be downloaded):".red());
-        for file in report.missing_files {
-            println!("  {}", file.red());
+        for op in self.missing() {
+            println!(
+                "  {} (New Size: {})",
+                op.patch_file.path.red(),
+                humansize::format_size(op.patch_file.size as u64, BINARY)
+            );
         }
 
         if self.has_pending_operations() {

@@ -58,17 +58,19 @@ impl Progress {
         let filename = Self::truncate_filename(&self.filename);
         let speed = format_size(self.speed as u64, DECIMAL);
         let total_files_width = self.total_files.to_string().len();
+        let file_size = format_size(self.file_size, DECIMAL);
         let file_left = format_size(self.file_size.saturating_sub(self.current), DECIMAL);
 
         if self.current >= self.file_size {
             print!("\r\x1B[2K"); // Clear the line
             println!(
-                "\r[{:>width$}/{}] {:<filename_width$} {} 100% (complete) | {} | ETA: {:.1}s",
+                "\r[{:>width$}/{}] {:<filename_width$} {} 100% (complete) | {:<8}/s | {} | ETA: {:.1}s",
                 self.file_index,
                 self.total_files,
                 filename,
                 progress_bar,
-                file_left,
+                speed,
+                file_size,
                 self.expected_time_left,
                 width = total_files_width,
                 filename_width = MAX_FILENAME_LENGTH - 1
@@ -76,13 +78,14 @@ impl Progress {
         } else {
             print!("\r\x1B[2K"); // Clear the line
             print!(
-                "\r[{:>width$}/{}] {:<filename_width$} {} {:5.1}% | {:<8}/s | {} | ETA: {:.1}s",
+                "\r[{:>width$}/{}] {:<filename_width$} {} {:5.1}% | {:<8}/s | {} | {} | ETA: {:.1}s",
                 self.file_index,
                 self.total_files,
                 filename,
                 progress_bar,
                 percent,
                 speed,
+                file_size,
                 file_left,
                 self.expected_time_left,
                 width = total_files_width,
