@@ -11,7 +11,7 @@ use super::manifest::{Manifest, PatchFile};
 use super::Progress;
 
 #[derive(PartialEq, Clone)]
-pub enum Status {
+enum Status {
     Present,
     OutOfDate,
     Missing,
@@ -27,10 +27,10 @@ pub enum Status {
 /// - `patch_file`: The patch file associated with the operation.
 /// - `size`: The size of the patch, represented as a 64-bit signed integer.
 /// - `status`: The status of the file operation.
-pub struct FileOperation {
-    pub patch_file: PatchFile,
-    pub size: i64,
-    pub status: Status,
+struct FileOperation {
+    patch_file: PatchFile,
+    size: i64,
+    status: Status,
 }
 
 impl FileOperation {
@@ -80,21 +80,28 @@ impl FileOperation {
     }
 }
 
-#[derive(Clone)]
-pub struct Transaction {
-    operations: Vec<FileOperation>,
-    manifest_version: String,
-    pub base_path: PathBuf,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FileReport {
+    pub path: String,
+    pub current_size: Option<i64>,  // None if file is missing
+    pub new_size: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransactionReport {
     pub version: String,
-    pub up_to_date_files: Vec<String>,
-    pub outdated_files: Vec<String>,
-    pub missing_files: Vec<String>,
+    pub up_to_date_files: Vec<FileReport>,
+    pub outdated_files: Vec<FileReport>,
+    pub missing_files: Vec<FileReport>,
     pub total_download_size: u64,
     pub disk_space_change: i64,
+    pub base_path: PathBuf,
+}
+
+#[derive(Clone)]
+pub struct Transaction {
+    operations: Vec<FileOperation>,
+    manifest_version: String,
     pub base_path: PathBuf,
 }
 
@@ -114,17 +121,29 @@ impl Transaction {
             up_to_date_files: self
                 .up_to_date()
                 .iter()
-                .map(|op| op.patch_file.path.clone())
+                .map(|op| FileReport {
+                    path: op.patch_file.path.clone(),
+                    current_size: Some(op.size),
+                    new_size: op.patch_file.size,
+                })
                 .collect(),
             outdated_files: self
                 .outdated()
                 .iter()
-                .map(|op| op.patch_file.path.clone())
+                .map(|op| FileReport {
+                    path: op.patch_file.path.clone(),
+                    current_size: Some(op.size),
+                    new_size: op.patch_file.size,
+                })
                 .collect(),
             missing_files: self
                 .missing()
                 .iter()
-                .map(|op| op.patch_file.path.clone())
+                .map(|op| FileReport {
+                    path: op.patch_file.path.clone(),
+                    current_size: None,
+                    new_size: op.patch_file.size,
+                })
                 .collect(),
             total_download_size: self.total_download_size() as u64,
             disk_space_change: self.disk_space_change(),
@@ -139,30 +158,30 @@ impl Transaction {
         println!(" Base path: {}", report.base_path.display());
 
         println!("\n {}", "Up-to-date files:".green());
-        for op in self.up_to_date() {
+        for file in &report.up_to_date_files {
             println!(
                 "  {} (Size: {})",
-                op.patch_file.path.green(),
-                humansize::format_size(op.size as u64, BINARY)
+                file.path.green(),
+                humansize::format_size(file.new_size as u64, BINARY)
             );
         }
 
         println!("\n {}", "Outdated files (will be updated):".yellow());
-        for op in self.outdated() {
+        for file in &report.outdated_files {
             println!(
                 "  {} (Current Size: {}, New Size: {})",
-                op.patch_file.path.yellow(),
-                humansize::format_size(op.size as u64, BINARY),
-                humansize::format_size(op.patch_file.size as u64, BINARY)
+                file.path.yellow(),
+                humansize::format_size(file.current_size.unwrap() as u64, BINARY),
+                humansize::format_size(file.new_size as u64, BINARY)
             );
         }
 
         println!("\n {}", "Missing files (will be downloaded):".red());
-        for op in self.missing() {
+        for file in &report.missing_files {
             println!(
                 "  {} (New Size: {})",
-                op.patch_file.path.red(),
-                humansize::format_size(op.patch_file.size as u64, BINARY)
+                file.path.red(),
+                humansize::format_size(file.new_size as u64, BINARY)
             );
         }
 
@@ -204,14 +223,14 @@ impl Transaction {
             .collect()
     }
 
-    pub fn pending(&self) -> Vec<&FileOperation> {
+    fn pending(&self) -> Vec<&FileOperation> {
         self.operations
             .iter()
             .filter(|op| op.status != Status::Present)
             .collect()
     }
 
-    pub fn missing(&self) -> Vec<&FileOperation> {
+    fn missing(&self) -> Vec<&FileOperation> {
         self.operations
             .iter()
             .filter(|op| op.status == Status::Missing)
@@ -229,7 +248,7 @@ impl Transaction {
         self.pending_count() > 0
     }
 
-    pub fn total_download_size(&self) -> i64 {
+    fn total_download_size(&self) -> i64 {
         let total = self
             .operations
             .iter()
