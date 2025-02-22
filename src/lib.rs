@@ -5,6 +5,7 @@ pub mod manifest;
 pub mod progress;
 pub mod prompt;
 pub mod transaction;
+pub mod game;
 
 pub use config::Config;
 pub use manifest::Location;
