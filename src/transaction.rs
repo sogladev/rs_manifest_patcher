@@ -83,7 +83,7 @@ impl FileOperation {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FileReport {
     pub path: String,
-    pub current_size: Option<i64>,  // None if file is missing
+    pub current_size: Option<i64>, // None if file is missing
     pub new_size: i64,
 }
 
