@@ -12,6 +12,7 @@
 ///
 /// # Examples
 /// ```
+/// use rs_manifest_patcher::game::verify_game_integrity;
 /// let game_path = std::path::Path::new("C:/Games/WoW");
 /// match verify_game_integrity(game_path) {
 ///     Ok(true) => println!("Game files verified successfully"),
