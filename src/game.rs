@@ -21,15 +21,9 @@
 /// ```
 #[allow(dead_code)]
 pub fn verify_game_integrity(game_dir: &std::path::Path) -> Result<bool, std::io::Error> {
-    let required_files = [
-        "Battle.net.dll",
-        "Data/lichking.MPQ",
-        "Data/patch-3.MPQ",
-    ];
+    let required_files = ["Battle.net.dll", "Data/lichking.MPQ", "Data/patch-3.MPQ"];
 
-    let required_dirs = [
-        "Data",
-    ];
+    let required_dirs = ["Data"];
 
     // Check required directories
     for dir in required_dirs.iter() {
@@ -50,4 +44,41 @@ pub fn verify_game_integrity(game_dir: &std::path::Path) -> Result<bool, std::io
     }
 
     Ok(true)
+}
+
+#[allow(dead_code)]
+pub fn launch(client_directory: &std::path::Path, executable_name: String) -> std::io::Result<()> {
+    // Clear the cache directory
+    // let cache_path = client_directory.join("Cache");
+    // if cache_path.exists() {
+    // std::fs::remove_dir_all(&cache_path)?;
+    // }
+
+    let executable_path = client_directory.join(executable_name);
+    match std::env::consts::OS {
+        "linux" => {
+            let wine_prefix = std::env::var("WINEPREFIX")
+                .unwrap_or_else(|_| client_directory.join(".wine").to_string_lossy().to_string());
+            let command = format!(
+                "WINEPREFIX=\"{}\" wine \"{}\"",
+                wine_prefix,
+                executable_path.display()
+            );
+            std::process::Command::new("setsid")
+                .arg("sh")
+                .arg("-c")
+                .arg(command)
+                .spawn()?;
+        }
+        "windows" => {
+            std::process::Command::new(executable_path).spawn()?;
+        }
+        _ => {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Unsupported platform",
+            ));
+        }
+    }
+    Ok(())
 }
