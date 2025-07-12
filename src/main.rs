@@ -41,7 +41,9 @@ async fn run(config: Config) -> Result<(), Box<dyn Error>> {
             progress.print();
             Ok(())
         };
-        transaction.download(progress_handler).await?;
+        transaction
+            .download(progress_handler, config.manifest_provider)
+            .await?;
     }
 
     println!("\n{}", "-".repeat(100));
