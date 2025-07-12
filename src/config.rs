@@ -1,4 +1,5 @@
 use clap::{arg, Command};
+use std::str::FromStr;
 
 use super::manifest::{Location, Provider};
 
@@ -23,7 +24,7 @@ impl Config {
         let manifest = Location::parse(manifest_str)?;
 
         let provider_str = matches.get_one::<String>("provider").unwrap().as_str();
-        let provider = Provider::from_str(provider_str);
+        let provider = Provider::from_str(provider_str).unwrap();
 
         Ok(Config {
             manifest_location: manifest,

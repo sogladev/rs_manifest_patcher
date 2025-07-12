@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -69,16 +70,6 @@ impl Provider {
         vec!["cloudflare", "digitalocean", "none"]
     }
 
-    /// Parse a string into a Provider
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "cloudflare" => Provider::Cloudflare,
-            "digitalocean" => Provider::DigitalOcean,
-            "none" => Provider::None,
-            other => Provider::Other(other.to_string()),
-        }
-    }
-
     /// Get the display name for UI purposes
     pub fn display_name(&self) -> &str {
         match self {
@@ -87,6 +78,19 @@ impl Provider {
             Provider::None => "Server #3 (Slowest)",
             Provider::Other(name) => name,
         }
+    }
+}
+
+impl FromStr for Provider {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "cloudflare" => Provider::Cloudflare,
+            "digitalocean" => Provider::DigitalOcean,
+            "none" => Provider::None,
+            other => Provider::Other(other.to_string()),
+        })
     }
 }
 
