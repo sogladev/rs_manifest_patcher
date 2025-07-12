@@ -52,7 +52,7 @@ impl FileOperation {
                 match std::fs::read(&full_path) {
                     Ok(contents) => {
                         let digest = md5::compute(contents);
-                        let digest_str = format!("{:x}", digest);
+                        let digest_str = format!("{digest:x}");
                         let new_size: i64 = std::fs::metadata(&full_path)
                             .unwrap_or_else(|_| {
                                 panic!("Failed to read metadata for file: {:?}", &full_path)
@@ -262,8 +262,7 @@ impl Transaction {
             .sum();
         assert!(
             total >= 0,
-            "Total download size must be non-negative, but found {}.",
-            total
+            "Total download size must be non-negative, but found {total}."
         );
         total
     }
