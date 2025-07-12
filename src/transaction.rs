@@ -276,7 +276,11 @@ impl Transaction {
             .sum()
     }
 
-    pub async fn download<F>(&self, progress_handler: F, provider: Provider) -> Result<(), Box<dyn Error>>
+    pub async fn download<F>(
+        &self,
+        progress_handler: F,
+        provider: Provider,
+    ) -> Result<(), Box<dyn Error>>
     where
         F: Fn(&Progress) -> Result<(), Box<dyn Error>> + Send + 'static,
     {

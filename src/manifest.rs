@@ -1,6 +1,6 @@
+use std::collections::HashMap;
 use std::error::Error;
 use std::path::PathBuf;
-use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -112,7 +112,8 @@ pub struct PatchFile {
 impl PatchFile {
     /// Get URL for a specific provider, falling back to "none" if not found
     pub fn get_url(&self, provider: &Provider) -> Option<&String> {
-        self.urls.get(provider)
+        self.urls
+            .get(provider)
             .or_else(|| self.urls.get(&Provider::None))
     }
 
