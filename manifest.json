@@ -9,8 +9,8 @@
       "Custom": true,
       "URL": "http://localhost:8080/files/A.bin",
       "Urls": {
-        "Provider1": "http://localhost:8080/files/A.bin",
-        "Provider2": "http://localhost:8080/files/A.bin",
+        "digitalocean": "http://localhost:8080/files/A.bin",
+        "cloudflare": "http://localhost:8080/files/A.bin",
         "none": "http://localhost:8080/files/A.bin"
       }
     },
@@ -20,8 +20,8 @@
       "Size": 1048576,
       "Custom": true,
       "Urls": {
-        "Provider1": "http://localhost:8080/files/B.bin",
-        "Provider2": "http://localhost:8080/files/B.bin",
+        "digitalocean": "http://localhost:8080/files/B.bin",
+        "cloudflare": "http://localhost:8080/files/B.bin",
         "none": "http://localhost:8080/files/B.bin"
       }
     },
@@ -31,8 +31,8 @@
       "Size": 2072576,
       "Custom": true,
       "Urls": {
-        "Provider1": "http://localhost:8080/files/C.bin",
-        "Provider2": "http://localhost:8080/files/C.bin",
+        "digitalocean": "http://localhost:8080/files/C.bin",
+        "cloudflare": "http://localhost:8080/files/C.bin",
         "none": "http://localhost:8080/files/C.bin"
       }
     },
@@ -42,8 +42,8 @@
       "Size": 2072576,
       "Custom": true,
       "Urls": {
-        "Provider1": "http://localhost:8080/files/D.bin",
-        "Provider2": "http://localhost:8080/files/D.bin",
+        "digitalocean": "http://localhost:8080/files/D.bin",
+        "cloudflare": "http://localhost:8080/files/D.bin",
         "none": "http://localhost:8080/files/D.bin"
       }
     },
@@ -53,8 +53,8 @@
       "Size": 1048576,
       "Custom": true,
       "Urls": {
-        "Provider1": "http://localhost:8080/files/more/E.bin",
-        "Provider2": "http://localhost:8080/files/more/E.bin",
+        "digitalocean": "http://localhost:8080/files/more/E.bin",
+        "cloudflare": "http://localhost:8080/files/more/E.bin",
         "none": "http://localhost:8080/files/more/E.bin"
       }
     },
@@ -64,8 +64,8 @@
       "Size": 1048576,
       "Custom": true,
       "Urls": {
-        "Provider1": "http://localhost:8080/files/more/F.bin",
-        "Provider2": "http://localhost:8080/files/more/F.bin",
+        "digitalocean": "http://localhost:8080/files/more/F.bin",
+        "cloudflare": "http://localhost:8080/files/more/F.bin",
         "none": "http://localhost:8080/files/more/F.bin"
       }
     }
