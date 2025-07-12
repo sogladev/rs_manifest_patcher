@@ -16,6 +16,11 @@ Feature comparison with [go-manifest-patcher](https://github.com/sogladev/go-man
 https://github.com/sogladev/go-manifest-patcher/tree/main/server
 > This is a test server application designed to simulate file downloads for the patcher download client. It provides manifest generation and throttled file serving capabilities.
 
+Run with local manifest
+```
+cargo run -- -m manifest.json
+```
+
 ## Build
 
 To build this project, you need to have Rust installed. You can download it from the [official Rust website](https://www.rust-lang.org/). If you are new to Rust, you can learn more from the [Rust Book](https://doc.rust-lang.org/book/).
